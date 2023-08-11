@@ -27,7 +27,6 @@ public class TagOrderInterceptor {
 		meta.getProfile().sort(profileAlphabeticalComparator);
 	}
 
-
 	@Hook(value = Pointcut.STORAGE_PRESTORAGE_RESOURCE_CREATED)
 	public void resourcePreCreate(RequestDetails theRequest, IBaseResource theResource) {
 		sortResourceTags(theResource);

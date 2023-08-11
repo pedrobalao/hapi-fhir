@@ -3,16 +3,26 @@ package ca.uhn.fhir.jpa.dao.r4;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.api.config.JpaStorageSettings;
 import ca.uhn.fhir.jpa.provider.BaseResourceProviderR4Test;
+import ca.uhn.fhir.jpa.searchparam.SearchParameterMap;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
+import ca.uhn.fhir.storage.TagOrderInterceptor;
+import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Enumerations;
 import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.SearchParameter;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.context.annotation.DependsOn;
 
 import javax.annotation.Nonnull;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static ca.uhn.fhir.jpa.dao.r4.FhirResourceDaoR4TagsTest.toProfiles;
 import static ca.uhn.fhir.jpa.dao.r4.FhirResourceDaoR4TagsTest.toSecurityLabels;
@@ -34,7 +44,6 @@ public class FhirResourceDaoR4TagsInlineTest extends BaseResourceProviderR4Test 
 		myStorageSettings.setTagStorageMode(JpaStorageSettings.DEFAULT_TAG_STORAGE_MODE);
 	}
 
-
 	@Test
 	public void testInlineTags_StoreAndRetrieve() {
 		myStorageSettings.setTagStorageMode(JpaStorageSettings.TagStorageModeEnum.INLINE);
@@ -48,15 +57,74 @@ public class FhirResourceDaoR4TagsInlineTest extends BaseResourceProviderR4Test 
 		patient.setActive(true);
 		myPatientDao.update(patient, mySrd);
 
-		runInTransaction(() -> {
-			assertEquals(0, myResourceTagDao.count());
-			assertEquals(0, myResourceHistoryTagDao.count());
-			assertEquals(0, myTagDefinitionDao.count());
-		});
+		verifyTagTablesAreEmpty();
 
 		// Read it back
 		patient = myPatientDao.read(new IdType("Patient/A/_history/1"), mySrd);
 		assertThat(toProfiles(patient).toString(), toProfiles(patient), contains("http://profile1"));
+		assertThat(toTags(patient).toString(), toTags(patient), contains("http://tag1|vtag1|dtag1"));
+		assertThat(toSecurityLabels(patient).toString(), toSecurityLabels(patient), contains("http://sec1|vsec1|dsec1"));
+
+		// Store a second version
+		patient = new Patient();
+		patient.setId("Patient/A");
+		patient.getMeta().addProfile("http://profile2");
+		patient.getMeta().addTag("http://tag2", "vtag2", "dtag2");
+		patient.getMeta().addSecurity("http://sec2", "vsec2", "dsec2");
+		patient.setActive(true);
+		myPatientDao.update(patient, mySrd);
+
+		verifyTagTablesAreEmpty();
+
+		// First version should have only the initial tags
+		patient = myPatientDao.read(new IdType("Patient/A/_history/1"), mySrd);
+		assertThat(toProfiles(patient).toString(), toProfiles(patient), contains("http://profile1"));
+		assertThat(toTags(patient).toString(), toTags(patient), contains("http://tag1|vtag1|dtag1"));
+		assertThat(toSecurityLabels(patient).toString(), toSecurityLabels(patient), contains("http://sec1|vsec1|dsec1"));
+
+		// Second version should have the new set of tags
+		// TODO: We could copy these forward like we do for non-inline mode. Perhaps in the future.
+		patient = myPatientDao.read(new IdType("Patient/A/_history/2"), mySrd);
+		assertThat(toProfiles(patient).toString(), toProfiles(patient), contains("http://profile2"));
+		assertThat(toTags(patient).toString(), toTags(patient), containsInAnyOrder("http://tag2|vtag2|dtag2"));
+		assertThat(toSecurityLabels(patient).toString(), toSecurityLabels(patient), containsInAnyOrder("http://sec2|vsec2|dsec2"));
+		List<IBaseResource> pts = myPatientDao.search(new SearchParameterMap(), mySrd).getAllResources();
+		pts.size();
+
+	}
+
+
+	@Test
+	public void testInlineTags_TagsStoreMultipleAndShouldRetrieveOrderedAlphabetically() {
+		myStorageSettings.setTagStorageMode(JpaStorageSettings.TagStorageModeEnum.NON_VERSIONED);
+		TagOrderInterceptor toi = new TagOrderInterceptor();
+		myInterceptorRegistry.registerInterceptor(toi);
+		// Store a first version
+		Patient patient = new Patient();
+		patient.setId("Patient/A");
+		patient.getMeta()
+			.addProfile("pC")
+			.addProfile("pA");
+		patient.getMeta()
+			.addTag("system1", "tC", "dC")
+			.addTag("system1", "tZ", "dZ")
+			.addTag("system1", "tA", "dA");
+		patient.getMeta()
+			.addSecurity("system1", "sC", "dtagC")
+			.addSecurity("system1", "sA", "dtagA");
+		patient.setActive(true);
+		myPatientDao.update(patient, mySrd);
+
+		//verifyTagTablesAreEmpty();
+
+		// Read it back
+		patient = myPatientDao.read(new IdType("Patient/A"), mySrd);
+		assertEquals(Arrays.asList("pA", "pC"), toProfiles(patient));
+		assertEquals(Arrays.asList("system1|tA|dA", "system1|tC|dC", "system1|tZ|dZ"), toTags(patient));
+		//assertThat(toProfiles(patient).toString(), toProfiles(patient), contains("http://profile1"));
+
+myInterceptorRegistry.unregisterInterceptor(toi);
+	/*
 		assertThat(toTags(patient).toString(), toTags(patient), contains("http://tag1|vtag1|dtag1"));
 		assertThat(toSecurityLabels(patient).toString(), toSecurityLabels(patient), contains("http://sec1|vsec1|dsec1"));
 
@@ -87,10 +155,8 @@ public class FhirResourceDaoR4TagsInlineTest extends BaseResourceProviderR4Test 
 		assertThat(toProfiles(patient).toString(), toProfiles(patient), contains("http://profile2"));
 		assertThat(toTags(patient).toString(), toTags(patient), containsInAnyOrder("http://tag2|vtag2|dtag2"));
 		assertThat(toSecurityLabels(patient).toString(), toSecurityLabels(patient), containsInAnyOrder("http://sec2|vsec2|dsec2"));
-
+*/
 	}
-
-
 	@Test
 	public void testInlineTags_Search_Tag() {
 		myStorageSettings.setTagStorageMode(JpaStorageSettings.TagStorageModeEnum.INLINE);
@@ -234,6 +300,15 @@ public class FhirResourceDaoR4TagsInlineTest extends BaseResourceProviderR4Test 
 		searchParameter.setName("Profile");
 		searchParameter.setExpression("meta.profile");
 		return searchParameter;
+	}
+
+
+	private void verifyTagTablesAreEmpty() {
+		runInTransaction(() -> {
+			assertEquals(0, myResourceTagDao.count());
+			assertEquals(0, myResourceHistoryTagDao.count());
+			assertEquals(0, myTagDefinitionDao.count());
+		});
 	}
 
 }
