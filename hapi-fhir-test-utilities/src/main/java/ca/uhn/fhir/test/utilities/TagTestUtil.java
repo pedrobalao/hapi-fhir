@@ -64,11 +64,12 @@ public class TagTestUtil {
 		Meta meta = new Meta();
 		meta.setTag(new ArrayList<>(tags));
 		meta.setSecurity(new ArrayList<>(securityLabels));
-		meta.setProfile(profiles.stream().map(p -> new CanonicalType(p)).collect(Collectors.toList()));
+		meta.setProfile(toCanonicalTypeList(profiles));
 		return meta;
 	}
 
-
-
+	public static List<CanonicalType> toCanonicalTypeList(List<String> theStrings) {
+		return theStrings.stream().map(s -> new CanonicalType(s)).collect(Collectors.toList());
+	}
 
 }

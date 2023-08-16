@@ -5,7 +5,6 @@ import ca.uhn.fhir.jpa.api.config.JpaStorageSettings;
 import ca.uhn.fhir.jpa.provider.BaseResourceProviderR4Test;
 import ca.uhn.fhir.jpa.searchparam.SearchParameterMap;
 import ca.uhn.fhir.rest.gclient.TokenClientParam;
-import ca.uhn.fhir.storage.TagOrderInterceptor;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Enumerations;
@@ -13,14 +12,9 @@ import org.hl7.fhir.r4.model.IdType;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.SearchParameter;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.springframework.context.annotation.DependsOn;
 
 import javax.annotation.Nonnull;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -97,8 +91,6 @@ public class FhirResourceDaoR4TagsInlineTest extends BaseResourceProviderR4Test 
 	@Test
 	public void testInlineTags_TagsStoreMultipleAndShouldRetrieveOrderedAlphabetically() {
 		myStorageSettings.setTagStorageMode(JpaStorageSettings.TagStorageModeEnum.NON_VERSIONED);
-		TagOrderInterceptor toi = new TagOrderInterceptor();
-		myInterceptorRegistry.registerInterceptor(toi);
 		// Store a first version
 		Patient patient = new Patient();
 		patient.setId("Patient/A");
@@ -123,8 +115,6 @@ public class FhirResourceDaoR4TagsInlineTest extends BaseResourceProviderR4Test 
 		assertEquals(Arrays.asList("system1|tA|dA", "system1|tC|dC", "system1|tZ|dZ"), toTags(patient));
 		//assertThat(toProfiles(patient).toString(), toProfiles(patient), contains("http://profile1"));
 
-myInterceptorRegistry.unregisterInterceptor(toi);
-	/*
 		assertThat(toTags(patient).toString(), toTags(patient), contains("http://tag1|vtag1|dtag1"));
 		assertThat(toSecurityLabels(patient).toString(), toSecurityLabels(patient), contains("http://sec1|vsec1|dsec1"));
 
@@ -155,7 +145,6 @@ myInterceptorRegistry.unregisterInterceptor(toi);
 		assertThat(toProfiles(patient).toString(), toProfiles(patient), contains("http://profile2"));
 		assertThat(toTags(patient).toString(), toTags(patient), containsInAnyOrder("http://tag2|vtag2|dtag2"));
 		assertThat(toSecurityLabels(patient).toString(), toSecurityLabels(patient), containsInAnyOrder("http://sec2|vsec2|dsec2"));
-*/
 	}
 	@Test
 	public void testInlineTags_Search_Tag() {
