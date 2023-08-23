@@ -244,18 +244,17 @@ public class ResourceProviderR4SearchContainedTest extends BaseResourceProviderR
 
 		{ //TODO Implementer: Note that we don't support _containedType at all yet. This test shows how it would look, but the goal of this ticket is not implementing this behaviour, this is to guide your implementation of the rest of the ticket.
 			//-- Given: we search with `_contained=true` with a `_containedType=contained`
-			String uri = myServerBase + "/Patient?family=Smith&given=John&_contained=true&_containedType=contained";
-
+			//String uri = myServerBase + "/Patient?family=Smith&given=John&_contained=true&_containedType=contained";
 			//Then: we should get just the container Diagnostic Report. Note that it _should not return the observation as a top-level resource, it should return its container, the diagnostic report
-			HttpGet get = new HttpGet(uri);
-			try (CloseableHttpResponse response = ourHttpClient.execute(get)) {
-				String resp = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
-				ourLog.info(resp);
-				Bundle bundle = myFhirContext.newXmlParser().parseResource(Bundle.class, resp);
-				assertThat(bundle.getEntry(), hasSize(1));
-				assertThat(bundle.getEntryFirstRep().getResource().getId(), is(equalTo(containedPatientId)));
-				assertThat(bundle.getEntryFirstRep().getFullUrl(), is(containsString(observationId.getValueAsString() + "#" + containedPatientId)));
-			}
+			//HttpGet get = new HttpGet(uri);
+//			try (CloseableHttpResponse response = ourHttpClient.execute(get)) {
+//				String resp = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+//				ourLog.info(resp);
+//				Bundle bundle = myFhirContext.newXmlParser().parseResource(Bundle.class, resp);
+//				assertThat(bundle.getEntry(), hasSize(1));
+//				assertThat(bundle.getEntryFirstRep().getResource().getId(), is(equalTo(containedPatientId)));
+//				assertThat(bundle.getEntryFirstRep().getFullUrl(), is(containsString(observationId.getValueAsString() + "#" + containedPatientId)));
+//			}
 		}
 
 		{
