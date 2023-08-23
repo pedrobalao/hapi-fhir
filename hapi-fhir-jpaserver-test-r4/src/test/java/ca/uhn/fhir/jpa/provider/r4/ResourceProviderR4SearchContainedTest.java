@@ -42,8 +42,6 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.emptyIterable;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.containsString;
@@ -197,7 +195,7 @@ public class ResourceProviderR4SearchContainedTest extends BaseResourceProviderR
 	}
 
 	@Test
-	public void testDirectSearchOnContainedResourceReturnsContainedResourceWithWrappedFullUrl() throws IOException {
+	public void testContainedParameterBehaviourWithoutChain() throws IOException {
 		IIdType discretePatientId;
 		{
 			Patient p = new Patient();
@@ -279,7 +277,7 @@ public class ResourceProviderR4SearchContainedTest extends BaseResourceProviderR
 	}
 
 	@Test
-	public void testContainedParameterBehaviour() throws IOException {
+	public void testContainedParameterBehaviourDuringChain() throws IOException {
 		IIdType oid1;
 		String containedId = "patient1";
 		{
