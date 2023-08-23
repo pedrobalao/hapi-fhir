@@ -20,6 +20,7 @@ import org.hl7.fhir.r4.model.ClinicalImpression;
 import org.hl7.fhir.r4.model.ClinicalImpression.ClinicalImpressionStatus;
 import org.hl7.fhir.r4.model.CodeableConcept;
 import org.hl7.fhir.r4.model.DecimalType;
+import org.hl7.fhir.r4.model.DiagnosticReport;
 import org.hl7.fhir.r4.model.Encounter;
 import org.hl7.fhir.r4.model.Encounter.EncounterStatus;
 import org.hl7.fhir.r4.model.HumanName;
@@ -42,6 +43,8 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -187,6 +190,113 @@ public class ResourceProviderR4SearchContainedTest extends BaseResourceProviderR
 		assertEquals(1L, oids.size());
 		assertThat(oids, contains(oid1.getValue()));
 
+	}
+
+	@Test
+	public void testSearchOnContainedDefaultsTo_ContainedEqualsBoth() throws IOException {
+		IIdType oid1;
+		String containedId = "patient1";
+		{
+			Patient p = new Patient();
+			p.setId(containedId);
+			p.addName().setFamily("Smith").addGiven("John");
+
+			Observation obs = new Observation();
+			obs.getCode().setText("Observation 1");
+			obs.getContained().add(p);
+			obs.getSubject().setReference("#" + containedId);
+
+			oid1 = myObservationDao.create(obs, mySrd).getId().toUnqualifiedVersionless();
+
+			ourLog.debug("Input: {}", myFhirContext.newJsonParser().setPrettyPrint(true).encodeResourceToString(obs));
+		}
+
+		//-- Simple search on a contained via a chain, with all different specifications of contained
+		String absentContained = myServerBase + "/Observation?subject.family=Smith&subject.given=John";
+		String trueContained = myServerBase + "/Observation?subject.family=Smith&subject.given=John&_contained=true";
+		String falseContained = myServerBase + "/Observation?subject.family=Smith&subject.given=John&_contained=false";
+
+		for(String uri: List.of(absentContained, trueContained, falseContained)) {
+			List<String> oids = searchAndReturnUnqualifiedVersionlessIdValues(uri);
+			assertEquals(1L, oids.size());
+			assertThat(oids, contains(oid1.getValue()));
+		}
+	}
+
+	@Test
+	public void testContainedParameterBehaviour() throws IOException {
+		IIdType oid1;
+		String containedId = "patient1";
+		{
+			Patient p = new Patient();
+			p.setId(containedId);
+			p.addName().setFamily("Smith").addGiven("John");
+
+			Observation obs = new Observation();
+			obs.getCode().setText("Observation 1");
+			obs.getContained().add(p);
+			obs.getSubject().setReference("#" + containedId);
+			oid1 = myObservationDao.create(obs, mySrd).getId().toUnqualifiedVersionless();
+
+			ourLog.debug("Input: {}", myFhirContext.newJsonParser().setPrettyPrint(true).encodeResourceToString(obs));
+		}
+
+		String containedPatientId2 = "patient2";
+		String containedObsId = "obs1";
+		IIdType containerReportId = null;
+		{
+			Patient p = new Patient();
+			p.setId(containedPatientId2);
+			p.addName().setFamily("Smith").addGiven("John");
+
+			Observation obs = new Observation();
+			obs.setId(containedObsId);
+			obs.getCode().setText("Observation 1");
+			obs.getContained().add(p);
+			obs.getSubject().setReference("#" + containedPatientId2);
+
+			DiagnosticReport containerReport = new DiagnosticReport();
+			containerReport.addResult().setReference("#" + containedObsId);
+			containerReport.getContained().add(obs);
+
+			containerReportId = myDiagnosticReportDao.create(containerReport, mySrd).getId().toUnqualifiedVersionless();
+
+			ourLog.debug("Input: {}", myFhirContext.newJsonParser().setPrettyPrint(true).encodeResourceToString(obs));
+		}
+
+		{
+			//When: Searching with an omitted `_contained`
+			String absentContained = myServerBase + "/Observation?subject.family=Smith&subject.given=John";
+			//Then: we should get just the discrete observation.
+			List<String> oids = searchAndReturnUnqualifiedVersionlessIdValues(absentContained);
+			assertEquals(1L, oids.size());
+			assertThat(oids, contains(oid1.getValue()));
+		}
+
+		{
+			//When: Searching with a`_contained=false`
+			String falseContained = myServerBase + "/Observation?subject.family=Smith&subject.given=John&_contained=false";
+
+			//Then: we should get just the discrete observation.
+			List<String> oids = searchAndReturnUnqualifiedVersionlessIdValues(falseContained);
+			assertEquals(1L, oids.size());
+			assertThat(oids, contains(oid1.getValue()));
+		}
+
+		{
+			//When: Searching with `_contained=true`
+			String trueContained = myServerBase + "/Observation?subject.family=Smith&subject.given=John&_contained=true";
+
+			//Then: we should get just the container Diagnostic Report. Note that it _should not return the observation as a top-level resource, it should return its container, the diagnostic report
+			HttpGet get = new HttpGet(trueContained);
+			try (CloseableHttpResponse response = ourHttpClient.execute(get)) {
+				String resp = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+				ourLog.info(resp);
+				Bundle bundle = myFhirContext.newXmlParser().parseResource(Bundle.class, resp);
+				assertThat(bundle.getEntry(), hasSize(1));
+				assertThat(bundle.getEntryFirstRep().getFullUrl(), is(containsString(containerReportId.getValueAsString() + "#" + containedObsId)));
+			}
+		}
 	}
 
 	@Test
