@@ -894,10 +894,8 @@ public class JpaConfig {
 		return new MdmClearHelperSvcImpl(theDeleteExpungeSvc);
 	}
 
-
 	@Bean
 	public IMetaTagSorter metaTagSorter() {
 		return new MetaTagSorterAlphabetical();
 	}
-
 }
