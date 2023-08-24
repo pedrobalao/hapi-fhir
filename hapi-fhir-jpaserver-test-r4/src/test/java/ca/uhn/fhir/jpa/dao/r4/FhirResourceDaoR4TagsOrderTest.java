@@ -19,23 +19,17 @@ import static ca.uhn.fhir.test.utilities.TagTestUtil.generateAllCodingPairs;
 
 public class FhirResourceDaoR4TagsOrderTest extends BaseJpaR4Test {
 
-	private TagOrderInterceptor myTagOrderInterceptor;
-
 	private TagTestCasesUtil myTagTestCasesUtil;
 
 	@Override
 	@BeforeEach
 	protected void before() throws Exception {
 		super.before();
-		MetaTagSorterAlphabetical tagSorter = new MetaTagSorterAlphabetical();
-		myTagOrderInterceptor = new TagOrderInterceptor(tagSorter);
-		myInterceptorRegistry.registerInterceptor(myTagOrderInterceptor);
 		myTagTestCasesUtil = new TagTestCasesUtil(myPatientDao, mySrd);
 	}
 
 	@AfterEach
 	protected void after() throws Exception {
-		myInterceptorRegistry.unregisterInterceptor(myTagOrderInterceptor);
 	}
 
 	@ParameterizedTest

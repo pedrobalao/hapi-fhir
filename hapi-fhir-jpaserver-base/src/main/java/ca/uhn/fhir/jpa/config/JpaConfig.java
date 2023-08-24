@@ -181,6 +181,8 @@ import ca.uhn.fhir.rest.server.interceptor.ResponseTerminologyTranslationSvc;
 import ca.uhn.fhir.rest.server.interceptor.consent.IConsentContextServices;
 import ca.uhn.fhir.rest.server.interceptor.partition.RequestTenantPartitionInterceptor;
 import ca.uhn.fhir.rest.server.util.ISearchParamRegistry;
+import ca.uhn.fhir.storage.interceptor.IMetaTagSorter;
+import ca.uhn.fhir.util.MetaTagSorterAlphabetical;
 import ca.uhn.hapi.converters.canonical.VersionCanonicalizer;
 import org.hl7.fhir.common.hapi.validation.support.UnknownCodeSystemWarningValidationSupport;
 import org.hl7.fhir.utilities.graphql.IGraphQLStorageServices;
@@ -891,4 +893,11 @@ public class JpaConfig {
 	public IMdmClearHelperSvc<JpaPid> helperSvc(IDeleteExpungeSvc<JpaPid> theDeleteExpungeSvc) {
 		return new MdmClearHelperSvcImpl(theDeleteExpungeSvc);
 	}
+
+
+	@Bean
+	public IMetaTagSorter metaTagSorter() {
+		return new MetaTagSorterAlphabetical();
+	}
+
 }

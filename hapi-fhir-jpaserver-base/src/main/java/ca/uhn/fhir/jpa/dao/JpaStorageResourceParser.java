@@ -54,6 +54,7 @@ import ca.uhn.fhir.parser.DataFormatException;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.parser.LenientErrorHandler;
 import ca.uhn.fhir.rest.api.Constants;
+import ca.uhn.fhir.storage.interceptor.IMetaTagSorter;
 import ca.uhn.fhir.util.MetaUtil;
 import org.apache.commons.lang3.Validate;
 import org.hl7.fhir.instance.model.api.IAnyResource;
@@ -97,6 +98,9 @@ public class JpaStorageResourceParser implements IJpaStorageResourceParser {
 
 	@Autowired
 	private ExternallyStoredResourceServiceRegistry myExternallyStoredResourceServiceRegistry;
+
+	@Autowired
+	IMetaTagSorter myMetaTagSorter;
 
 	@Override
 	public IBaseResource toResource(IBasePersistedResource theEntity, boolean theForHistoryOperation) {
@@ -222,6 +226,8 @@ public class JpaStorageResourceParser implements IJpaStorageResourceParser {
 
 		// 5. fill MetaData
 		retVal = populateResourceMetadata(theEntity, theForHistoryOperation, tagList, version, retVal);
+
+		myMetaTagSorter.sort(retVal.getMeta());
 
 		// 6. Handle source (provenance)
 		MetaUtil.populateResourceSource(myFhirContext, provenanceSourceUri, provenanceRequestId, retVal);

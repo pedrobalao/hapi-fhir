@@ -15,9 +15,12 @@ import java.util.List;
  *  and then by code for each system.
  */
 public class MetaTagSorterAlphabetical implements IMetaTagSorter {
-	private final Comparator<IBaseCoding> myCodingAlphabeticalComparator = new CodingAlphabeticalComparator();
+
+	private final Comparator<String> nullFirstStringComparator = Comparator.nullsFirst(Comparator.naturalOrder());
+	private final Comparator<IBaseCoding> myCodingAlphabeticalComparator = Comparator.comparing(IBaseCoding::getSystem, nullFirstStringComparator)
+		.thenComparing(IBaseCoding::getCode, nullFirstStringComparator);
 	private final Comparator<IPrimitiveType<String>> myPrimitiveStringAlphabeticalComparator =
-			new PrimitiveTypeOfStringAlphabeticalComparator();
+		Comparator.comparing(IPrimitiveType::getValue, nullFirstStringComparator);
 
 	public void sortCodings(List<? extends IBaseCoding> theCodings) {
 		theCodings.sort(myCodingAlphabeticalComparator);

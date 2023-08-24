@@ -123,20 +123,6 @@ The following example shows how to register the StaticCapabilityStatementInterce
 {{snippet:classpath:/ca/uhn/hapi/fhir/docs/ServletExamples.java|staticCapabilityStatementInterceptor}}
 ```
 
-# Response Customizing: Sorting Tags, Security Labels and Profiles
-
-You can use the built-in **TagOrderInterceptor** to have tags, security labels and profiles sorted in the responses, and also before storage. 
-
-If you are using INLINE tag storage mode, this interceptor prevents a new version of a resource to be created upon an update request if the only change is the order of the elements in these meta properties.
-
-* [TagOrderInterceptor JavaDoc](/apidocs/hapi-fhir-storage/src/main/java/ca/uhn/fhir/storage/interceptor/TagOrderInterceptor.html)
-* [TagOrderInterceptor Source](https://github.com/hapifhir/hapi-fhir/blob/master/hapi-fhir-storage/src/main/java/ca/uhn/fhir/storage/interceptor/TagOrderInterceptor.java)
-
-The following example shows how to register the TagOrderInterceptor that sorts each of these meta collections in alphabetical order.
-
-```java
-{{snippet:classpath:/ca/uhn/hapi/fhir/docs/ServletExamples.java|tagOrderInterceptor}}
-```
 <a name="request_and_response_validation"/>
 
 # Validation: Request and Response Validation

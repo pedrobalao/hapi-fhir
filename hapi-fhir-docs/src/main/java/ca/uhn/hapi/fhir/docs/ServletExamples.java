@@ -36,9 +36,6 @@ import ca.uhn.fhir.rest.server.interceptor.ResponseTerminologyTranslationSvc;
 import ca.uhn.fhir.rest.server.interceptor.ResponseValidatingInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.SearchPreferHandlingInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.StaticCapabilityStatementInterceptor;
-import ca.uhn.fhir.storage.interceptor.IMetaTagSorter;
-import ca.uhn.fhir.storage.interceptor.TagOrderInterceptor;
-import ca.uhn.fhir.util.MetaTagSorterAlphabetical;
 import ca.uhn.fhir.validation.ResultSeverityEnum;
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator;
 import org.hl7.fhir.r4.model.CapabilityStatement;
@@ -304,23 +301,4 @@ public class ServletExamples {
 		}
 		// END SNIPPET: preferHandling
 	}
-
-	// START SNIPPET: tagOrderInterceptor
-	@WebServlet(
-			urlPatterns = {"/fhir/*"},
-			displayName = "FHIR Server")
-	public class RestfulServerWithTagOrdering extends RestfulServer {
-
-		@Override
-		protected void initialize() throws ServletException {
-
-			// Create an interceptor with the alphabetical sorter
-			IMetaTagSorter tagSorter = new MetaTagSorterAlphabetical();
-			TagOrderInterceptor interceptor = new TagOrderInterceptor(tagSorter);
-
-			// Register the interceptor
-			registerInterceptor(interceptor);
-		}
-	}
-	// END SNIPPET: tagOrderInterceptor
 }
